@@ -1,0 +1,75 @@
+Imports System.Net
+Imports System.Net.Http
+Imports System.Security.Claims
+Imports System.Web.Http
+Imports MySql.Data.MySqlClient
+Imports Newtonsoft.Json
+
+Namespace Controllers
+    <RoutePrefix("api/ems")>
+    Public Class Ems_CController
+        Inherits ApiController
+        Dim identity As New ClaimsIdentity(User.Identity)
+        Private response As HttpResponseMessage
+        Dim ds As DataSet = New DataSet
+
+
+
+        'CREATE
+
+        <Route("Create/newdata", Name:="Post_New_report")>
+        Public Function Post_New_report(ByVal errorid As String, ByVal errorname As String, ByVal current_date As String, ByVal errordescription As String, ByVal userfirstname As String, ByVal dateerrorstart As String, ByVal dateerrorfixed As String, ByVal requesturl As String) As HttpResponseMessage
+            Dim response As HttpResponseMessage
+
+            Using sqlConn As New MySqlConnection(ConfigurationManager.ConnectionStrings("constr").ConnectionString)
+                If sqlConn.State = ConnectionState.Closed Then
+                    Try
+                        Using cmd As New MySqlCommand()
+                            cmd.Connection = sqlConn
+                            cmd.CommandText = "INSERT INTO ems_tb(id, 
+                                                           error_name, 
+                                                           date_now, 
+                                                           error_description, 
+                                                           user_first_name, 
+                                                           date_error_start, 
+                                                           date_error_fixed, 
+                                                           request_url) 
+                                                            VALUES (@errorid, 
+                                                                    @errorname, 
+                                                                    @current_date, 
+                                                                    @errordescription,
+                                                                    @userfirstname, 
+                                                                    @dateerrorstart, 
+                                                                    @dateerrorfixed, 
+                                                                    @requesturl)"
+
+                            cmd.Parameters.AddWithValue("@errorid", errorid)
+                            cmd.Parameters.AddWithValue("@errorname", errorname)
+                            cmd.Parameters.AddWithValue("@current_date", current_date)
+                            cmd.Parameters.AddWithValue("@errordescription", errordescription)
+                            cmd.Parameters.AddWithValue("@userfirstname", userfirstname)
+                            cmd.Parameters.AddWithValue("@dateerrorstart", dateerrorstart)
+                            cmd.Parameters.AddWithValue("@dateerrorfixed", dateerrorfixed)
+                            cmd.Parameters.AddWithValue("@requesturl", requesturl)
+
+                            sqlConn.Open()
+                            cmd.ExecuteNonQuery()
+
+                            response = Request.CreateResponse(HttpStatusCode.OK)
+                            response.Content = New StringContent("Successfully Created", Encoding.UTF8)
+                            Return response
+                        End Using
+                    Catch ex As Exception
+                        response = Request.CreateResponse(HttpStatusCode.InternalServerError)
+                        response.Content = New StringContent("Application Error: There is an error in performing this action, " & ex.ToString(), Encoding.UTF8)
+                        Return response
+                    Finally
+                        sqlConn.Close()
+                    End Try
+                Else
+                    response = Request.CreateResponse(HttpStatusCode.InternalServerError)
+                    response.Content = New StringContent("Server Error: Unable to connect to the database server", Encoding.UTF8)
+                    Return response
+                End If
+            End Using
+        End Function

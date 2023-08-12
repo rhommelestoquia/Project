@@ -1,0 +1,38 @@
+'READ
+        <Route("list/all", Name:="Get_system_List")>
+        Public Function Get_system_List() As IHttpActionResult
+            Dim stats As List(Of system_model) = New List(Of system_model)
+            Using sqlConn As New MySqlConnection(ConfigurationManager.ConnectionStrings("constr").ConnectionString)
+                If sqlConn.State = ConnectionState.Closed Then
+                    Try
+                        sqlConn.Open()
+                        Using msqlcom As New MySqlCommand("SELECT id,error_name,current_date,error_description FROM ems_tb", sqlConn)
+                            Using dtReader As MySqlDataReader = msqlcom.ExecuteReader()
+                                If dtReader.HasRows = True Then
+                                    While dtReader.Read()
+                                        Dim dataObj As New system_model
+                                        With dataObj
+                                            .id = dtReader("id").ToString()
+                                            .error_name = dtReader("error_name").ToString()
+                                            .current_date = dtReader("current_date").ToString()
+                                            .error_description = dtReader("error_description").ToString()
+                                        End With
+                                        stats.Add(dataObj)
+                                    End While
+                                    Return Ok(stats)
+                                Else
+                                    Return NotFound()
+                                End If
+                                dtReader.Close()
+                            End Using
+                            msqlcom.Dispose()
+                        End Using
+                        sqlConn.Close()
+                    Catch ex As Exception
+                        Return InternalServerError(ex)
+                    End Try
+                Else
+                    Return InternalServerError()
+                End If
+            End Using
+        End Function
